@@ -57,6 +57,8 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(models.User, UserAdmin)
+admin.site.register(models.Flock)
+
 
 # admin3@example.com
 # Tester1234
@@ -64,3 +66,4 @@ admin.site.register(models.User, UserAdmin)
 # admin3@example.com
 # admin1234
 # admin
+# Admin Brian

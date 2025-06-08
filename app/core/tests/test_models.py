@@ -1,7 +1,9 @@
 """Test user models"""
 
+# from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from core import models
 
 
 class ModelTests(TestCase):
@@ -38,3 +40,22 @@ class ModelTests(TestCase):
         user = get_user_model().objects.create_superuser("test@example.com", "test123")
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_flock(self):
+        "test creating flock is successful"
+        user = get_user_model().objects.create_user(
+            "test@example.com",
+            "testpass123",
+        )
+        flock = models.Flock.objects.create(
+            user=user,
+            batch_name="Layer Batch A",
+            date_acquired="2025-06-01",
+            initial_count=200,
+            breed="Kienyeji",
+        )
+        self.assertIsNotNone(flock.batch_id)
+        self.assertEqual(len(flock.batch_id), 20)
+        self.assertTrue(flock.batch_id.isalnum())
+        # self.assertEqual(str(flock), flock.batch_name)
+        # self.assertRegex(flock.batch_id, r"^[a-f0-9\-]{36}$")
