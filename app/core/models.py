@@ -67,3 +67,26 @@ class Flock(models.Model):
 
     def __str__(self):
         return f"{self.batch_name} ({self.batch_id})"
+
+
+class FlockSummary(models.Model):
+    flock = models.ForeignKey(
+        "Flock", on_delete=models.CASCADE, related_name="summaries"
+    )
+    day = models.PositiveIntegerField()
+    date = models.DateField()
+    weight_1 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    weight_2 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    weight_3 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    weight_4 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    weight_5 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+
+    total_feed = models.DecimalField(max_digits=6, decimal_places=2)
+    total_water = models.DecimalField(max_digits=6, decimal_places=2)
+    deaths = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ["flock", "day"]
+
+    def __str__(self):
+        return f"Day {self.day} - {self.flock.batch_name}"

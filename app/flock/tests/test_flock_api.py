@@ -15,6 +15,7 @@ from flock.serializers import (
 )
 
 FLOCKS_URL = reverse("flock:flock-list")
+SUMMARY_URL = reverse("flock:flock-summary")
 
 
 def detail_url(flock_id):
@@ -200,3 +201,60 @@ class PrivateFlockApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Flock.objects.filter(id=flock.id).exists())
+
+
+# summaries tests
+class FlockSummaryAPITests(TestCase):
+    """Test flock summary endpoint."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user(email="summary@example.com", password="pass123")
+        self.client.force_authenticate(self.user)
+
+    def test_summary_empty(self):
+        """Test summary when no flocks exist."""
+        res = self.client.get(SUMMARY_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["total_flocks"], 0)
+        self.assertEqual(res.data["total_birds"], 0)
+
+    def test_summary_single_flock(self):
+        Flock.objects.create(
+            user=self.user,
+            batch_name="Alpha",
+            date_acquired="2023-01-01",
+            initial_count=10,
+        )
+
+        url = reverse("flock:flock-summary")
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["total_flocks"], 1)
+        self.assertEqual(res.data["total_birds"], 10)
+
+    def test_summary_multiple_flocks(self):
+        """Test summary with multiple flocks."""
+        create_flock(user=self.user, initial_count=200)
+        create_flock(user=self.user, initial_count=120)
+        create_flock(user=self.user, initial_count=80)
+
+        res = self.client.get(SUMMARY_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["total_flocks"], 3)
+        self.assertEqual(res.data["total_birds"], 400)
+
+    def test_summary_limited_to_user(self):
+        """Test that summary only includes user's flocks."""
+        other_user = create_user(email="other@example.com", password="otherpass")
+        create_flock(user=other_user, initial_count=100)
+        create_flock(user=self.user, initial_count=250)
+
+        res = self.client.get(SUMMARY_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["total_flocks"], 1)
+        self.assertEqual(res.data["total_birds"], 250)

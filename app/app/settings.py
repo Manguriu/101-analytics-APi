@@ -87,6 +87,9 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_HEADERS = [
     "authorization",
     "content-type",
+    # changes
+    "x-csrftoken",
+    "accept",
 ]
 
 # Database
@@ -99,6 +102,7 @@ DATABASES = {
         "NAME": os.environ.get("DB_NAME"),
         "USER": os.environ.get("DB_USER"),
         "PASSWORD": os.environ.get("DB_PASS"),
+        "PORT": "5432",
     }
 }
 
@@ -153,3 +157,24 @@ AUTH_USER_MODEL = "core.User"
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+]
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
