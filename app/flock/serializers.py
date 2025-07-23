@@ -2,7 +2,7 @@
 
 from rest_framework import serializers  # type: ignore
 
-from core.models import Flock
+from core.models import Flock, HealthCheck
 from core.models import FlockSummary
 
 
@@ -28,8 +28,9 @@ class FlockSerializer(serializers.ModelSerializer):
 class FlockDetailSerializer(FlockSerializer):
     """Extension of the flock serializer with extra fields."""
 
-    class Meta(FlockSerializer.Meta):
-        fields = FlockSerializer.Meta.fields + ["batch_name"]
+
+class Meta(FlockSerializer.Meta):
+    fields = FlockSerializer.Meta.fields + ["batch_name"]
 
 
 class LogoutSerializer(serializers.Serializer):
@@ -42,7 +43,6 @@ class FlockSummarySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "flock",
-            "day",
             "date",
             "weight_1",
             "weight_2",
@@ -53,3 +53,31 @@ class FlockSummarySerializer(serializers.ModelSerializer):
             "total_water",
             "deaths",
         ]
+        read_only_fields = ["id", "user"]
+
+    def validate_flock(self, value):
+        if value.user != self.context["request"].user:
+            raise serializers.ValidationError("Current user has no rights")
+        return value
+
+
+class HealthCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HealthCheck
+        fields = [
+            "id",
+            "flock",
+            "date",
+            "symptoms",
+            "treatment",
+            "health_status",
+            "deaths",
+            "notes",
+        ]
+
+        read_only_fields = ["id"]
+
+    def validate_flock(self, value):
+        if value.user != self.context["request"].user:
+            raise serializers.ValidationError("Current user has no rights")
+        return value

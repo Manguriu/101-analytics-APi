@@ -1,3 +1,5 @@
+from argparse import Action
+from typing import Counter
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import viewsets  # type: ignore
@@ -7,10 +9,11 @@ from rest_framework.authtoken.models import Token  # type: ignore
 from rest_framework.views import APIView  # type: ignore
 from rest_framework.response import Response  # type: ignore
 from rest_framework.exceptions import PermissionDenied  # type: ignore
-from core.models import Flock
+from rest_framework.decorators import action  # type: ignore
+from core.models import Flock, HealthCheck
 from flock import serializers
 from core.models import FlockSummary
-from flock.serializers import FlockSummarySerializer
+from flock.serializers import FlockSummarySerializer, HealthCheckSerializer
 from statistics import mean
 
 
@@ -140,3 +143,46 @@ class FlockSummaryView(APIView):
                 "health_percentage": round(health_percentage, 2),
             }
         )
+
+
+class HealthCheckViewSet(viewsets.ModelViewSet):
+    serializer_class = HealthCheckSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return HealthCheck.objects.filter(flock__user=self.request.user)
+
+
+class HealthCheckSummaryView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        flocks = Flock.objects.filter(user=request.user)
+        total_initial_birds = (
+            flocks.aggregate(sum_initial=sum("initial_count"))["sum_initial"] or 0
+        )
+        health_checks = HealthCheck.objects.filter(flock__user=request.user)
+        total_deaths = (
+            health_checks.aggregate(sum_deaths=sum("deaths"))["sum_deaths"] or 0
+        )
+
+        diseases = [hc.disease for hc in health_checks if hc.disease]
+        most_common_disease = (
+            Counter(diseases).most_common(1)[0][0] if diseases else None
+        )
+
+        health_percentage = (
+            ((total_initial_birds - total_deaths) / total_initial_birds * 100)
+            if total_initial_birds > 0
+            else 100
+        )
+
+        summary_data = {
+            "total_deaths": total_deaths,
+            "most_common_disease": most_common_disease,
+            "health_percentage": round(health_percentage, 2),
+        }
+
+        return Response(summary_data)
