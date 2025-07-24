@@ -1,4 +1,4 @@
-from argparse import Action
+from datetime import datetime, time
 from typing import Counter
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -10,11 +10,17 @@ from rest_framework.views import APIView  # type: ignore
 from rest_framework.response import Response  # type: ignore
 from rest_framework.exceptions import PermissionDenied  # type: ignore
 from rest_framework.decorators import action  # type: ignore
-from core.models import Flock, HealthCheck
+from core.models import FinanceRecord, Flock, HealthCheck
 from flock import serializers
 from core.models import FlockSummary
-from flock.serializers import FlockSummarySerializer, HealthCheckSerializer
+from flock.serializers import (
+    FinanceRecordSerializer,
+    FinanceSummaryResponseSerializer,
+    FlockSummarySerializer,
+    HealthCheckSerializer,
+)
 from statistics import mean
+from django.utils import timezone
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -186,3 +192,176 @@ class HealthCheckSummaryView(APIView):
         }
 
         return Response(summary_data)
+
+
+class FinanceRecordViewSet(viewsets.ModelViewSet):
+    serializer_class = FinanceRecordSerializer
+    queryset = FinanceRecord.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = FinanceRecord.objects.filter(flock__user=self.request.user)
+
+        # Filtering by flock ID
+        flock_id = self.request.query_params.get("flock")
+        if flock_id:
+            queryset = queryset.filter(flock_id=flock_id)
+
+        # date filtering
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+        if start_date and end_date:
+            queryset = queryset.filter(created_at__range=[start_date, end_date])
+
+        return queryset
+
+
+# class FinanceSummaryView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         flock_id = request.query_params.get("flock_id")
+#         start_date = request.query_params.get("start")
+#         end_date = request.query_params.get("end")
+
+#         queryset = FinanceRecord.objects.filter(flock__user=request.user)
+
+#         if flock_id:
+#             queryset = queryset.filter(flock_id=flock_id)
+#         if start_date and end_date:
+#             try:
+#                 start = datetime.strptime(start_date, "%Y-%m-%d")
+#                 end = datetime.strptime(end_date, "%Y-%m-%d")
+#                 start = timezone.make_aware(datetime.combine(start, time.min))
+#                 end = timezone.make_aware(datetime.combine(end, time.max))
+#                 queryset = queryset.filter(created_at__range=(start, end))
+#                 # Debug: Print filtered records and their created_at
+#                 print(f"Start: {start}, End: {end}")
+#                 print(f"Filtered records: {[(r.batch_name, r.created_at) for r in queryset]}")
+#             except ValueError:
+#                 return Response(
+#                     {"error": "Invalid date format. Use YYYY-MM-DD."},
+#                     status=400
+#                 )
+
+#         records = queryset.order_by("created_at")
+#         response_data = []
+
+#         # Calculate per-flock summaries
+#         for record in records:
+#             calc_expenses = (
+#                 float(record.total_initial_cost)
+#                 + float(record.food_expense)
+#                 + float(record.water_expense)
+#                 + float(record.vaccination_expense)
+#                 + float(record.medicine_expense)
+#                 + float(record.lab_expense)
+#             )
+#             calc_revenue = float(record.remaining_birds) * float(record.selling_price_per_bird)
+#             calc_profit = calc_revenue - calc_expenses
+
+#             response_data.append(
+#                 {
+#                     "flock_id": record.flock.id,
+#                     "batch_name": record.batch_name,
+#                     "total_expenses": calc_expenses,
+#                     "total_revenue": calc_revenue,
+#                     "profit_margin": calc_profit,
+#                     "created_at": record.created_at.isoformat(),
+#                 }
+#             )
+
+#         # Calculate overall summary - ALWAYS include even if no records
+#         total_expenses_sum = sum(r["total_expenses"] for r in response_data)
+#         total_revenue_sum = sum(r["total_revenue"] for r in response_data)
+#         overall_profit = total_revenue_sum - total_expenses_sum
+
+#         response_data.append(
+#             {
+#                 "flock_id": None,
+#                 "batch_name": "Overall",
+#                 "total_expenses": total_expenses_sum,
+#                 "total_revenue": total_revenue_sum,
+#                 "profit_margin": overall_profit,
+#                 "created_at": timezone.now().isoformat(),
+#             }
+#         )
+
+#         return Response(response_data)
+
+
+class FinanceSummaryView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        flock_id = request.query_params.get("flock_id")
+        start_date = request.query_params.get("start")
+        end_date = request.query_params.get("end")
+
+        queryset = FinanceRecord.objects.filter(flock__user=request.user)
+
+        if flock_id:
+            queryset = queryset.filter(flock_id=flock_id)
+        if start_date and end_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                end = datetime.strptime(end_date, "%Y-%m-%d")
+                start = timezone.make_aware(datetime.combine(start, time.min))
+                end = timezone.make_aware(datetime.combine(end, time.max))
+                queryset = queryset.filter(created_at__range=(start, end))
+                print(f"Start: {start}, End: {end}")
+                print(
+                    f"Filtered records: {[(r.batch_name, r.created_at) for r in queryset]}"
+                )
+            except ValueError:
+                return Response(
+                    {"error": "Invalid date format. Use YYYY-MM-DD."}, status=400
+                )
+
+        records = queryset.order_by("created_at")
+        response_data = []
+
+        for record in records:
+            calc_expenses = (
+                float(record.total_initial_cost)
+                + float(record.food_expense)
+                + float(record.water_expense)
+                + float(record.vaccination_expense)
+                + float(record.medicine_expense)
+                + float(record.lab_expense)
+            )
+            calc_revenue = float(record.remaining_birds) * float(
+                record.selling_price_per_bird
+            )
+            calc_profit = calc_revenue - calc_expenses
+
+            response_data.append(
+                {
+                    "flock_id": record.flock.id,
+                    "batch_name": record.batch_name,
+                    "total_expenses": calc_expenses,
+                    "total_revenue": calc_revenue,
+                    "profit_margin": calc_profit,
+                    "created_at": record.created_at.isoformat(),
+                }
+            )
+
+        total_expenses_sum = sum(r["total_expenses"] for r in response_data)
+        total_revenue_sum = sum(r["total_revenue"] for r in response_data)
+        overall_profit = total_revenue_sum - total_expenses_sum
+
+        response_data.append(
+            {
+                "flock_id": None,
+                "batch_name": "Overall",
+                "total_expenses": total_expenses_sum,
+                "total_revenue": total_revenue_sum,
+                "profit_margin": overall_profit,
+                "created_at": timezone.now().isoformat(),
+            }
+        )
+
+        return Response(response_data)

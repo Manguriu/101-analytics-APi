@@ -101,3 +101,34 @@ class HealthCheck(models.Model):
 
     def __str__(self):
         return f"HealthCheck for {self.flock.name} on {self.date}"
+
+
+class FinanceRecord(models.Model):
+    flock = models.ForeignKey(
+        "Flock", on_delete=models.CASCADE, related_name="finance_records"
+    )
+    batch_name = models.CharField(max_length=255)
+    number_of_initial_birds = models.PositiveIntegerField(default=0)
+    price_per_initial_bird = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    total_initial_cost = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0.00
+    )
+    food_expense = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    water_expense = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    vaccination_expense = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0.00
+    )
+    medicine_expense = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0.00
+    )
+    lab_expense = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    remaining_birds = models.PositiveIntegerField(default=0)
+    selling_price_per_bird = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Finance Record for {self.batch_name} on {self.created_at.date()}"

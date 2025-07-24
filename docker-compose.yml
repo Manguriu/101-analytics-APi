@@ -1,4 +1,4 @@
-
+name: analytics-dev
 services:
   app:
     image: 101-analytics-api:latest
