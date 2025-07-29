@@ -69,6 +69,7 @@ class HealthCheckSerializer(serializers.ModelSerializer):
             "flock",
             "date",
             "symptoms",
+            "disease",
             "treatment",
             "health_status",
             "deaths",

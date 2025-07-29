@@ -16,7 +16,7 @@ urlpatterns = [
     path("logout/", views.LogoutView.as_view(), name="logout"),
     path("summary/", FlockSummaryView.as_view(), name="flock-summary"),
     path(
-        "healthchecks/summary/",
+        "healthcheck-summary/",
         views.HealthCheckSummaryView.as_view(),
         name="healthcheck-summary",
     ),
