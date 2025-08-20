@@ -131,6 +131,19 @@ REST_FRAMEWORK = {
     ],
 }
 
+# DRF Spectacular settings
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Poultry Analytics API",
+    "DESCRIPTION": "API for poultry farm analytics and management",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+    },
+    "COMPONENT_SPLIT_REQUEST": True,
+}
+
 # CORS & CSRF
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
@@ -165,14 +178,3 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-}
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Your API",
-    "DESCRIPTION": "API documentation",
-    "VERSION": "1.0.0",
-}
