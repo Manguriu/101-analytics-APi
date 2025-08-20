@@ -108,9 +108,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # WhiteNoise configuration - FIXED ORDER AND SYNTAX
-WHITENOISE_IGNORE_MISSING_FILES = True
-WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ("map",)
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # Media files
 MEDIA_URL = "/media/"
