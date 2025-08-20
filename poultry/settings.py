@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 import dj_database_url  # type: ignore
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables
@@ -104,22 +103,18 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# settings.py
-
 # Static files
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise configuration
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# WhiteNoise configuration - FIXED ORDER AND SYNTAX
 WHITENOISE_IGNORE_MISSING_FILES = True
+WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ("map",)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
-WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ("map",)
-
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
