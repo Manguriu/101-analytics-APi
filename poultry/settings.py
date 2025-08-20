@@ -1,11 +1,13 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url  # type: ignore
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables
-load_dotenv(BASE_DIR / ".env")  # Load base .env file
+load_dotenv(BASE_DIR / ".env")
 env_file = (
     ".env.development"
     if os.getenv("DJANGO_ENV", "development") == "development"
@@ -21,6 +23,11 @@ if not SECRET_KEY:
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# Add Render's hostname automatically
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 INSTALLED_APPS = [
@@ -71,16 +78,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "poultry.wsgi.application"
 
-# Database
+# Database - UPDATED FOR RENDER
 DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
-        "USER": os.getenv("DB_USER", ""),
-        "PASSWORD": os.getenv("DB_PASS", ""),
-        "HOST": os.getenv("DB_HOST", ""),
-        "PORT": os.getenv("DB_PORT", ""),
-    }
+    "default": dj_database_url.config(
+        # Falls back to individual env vars if DATABASE_URL is not set
+        default=os.getenv("DATABASE_URL", f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # Password validation
