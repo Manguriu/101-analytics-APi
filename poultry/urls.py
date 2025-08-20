@@ -1,5 +1,5 @@
 from poultry.flock.views import CustomObtainAuthToken
-from drf_spectacular.views import (  # type: ignore
+from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
