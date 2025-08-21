@@ -27,19 +27,9 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
-from django.http import JsonResponse
-from django.db import connection
 from poultry.flock.views import CustomObtainAuthToken
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-
-def health_check(request):
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-        return JsonResponse({"status": "healthy", "database": "connected"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "database": str(e)}, status=500)
+from .views import health_check
 
 
 urlpatterns = [
