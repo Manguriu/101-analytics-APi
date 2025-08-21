@@ -186,19 +186,49 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables based on environment
+if os.getenv("DJANGO_ENV", "development") == "production":
+    env_file = BASE_DIR / ".env.production"
+else:
+    env_file = BASE_DIR / ".env.development"
+
+if os.path.exists(env_file):
+    from dotenv import load_dotenv
+
+    load_dotenv(env_file)
+elif os.path.exists(BASE_DIR / ".env"):  # Fallback to .env if exists
+    from dotenv import load_dotenv
+
+    load_dotenv(BASE_DIR / ".env")
+
 # Security
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
-    raise ValueError("No SECRET_KEY set for Django application")
+    # Provide a default for development but raise error in production
+    if os.getenv("DJANGO_ENV") == "production" or os.getenv("RENDER"):
+        raise ValueError("No SECRET_KEY set for Django application")
+    else:
+        SECRET_KEY = "django-insecure-development-key-only-change-in-production"
 
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = ["one01-analytics-api.onrender.com", "localhost", "127.0.0.1"]
+# Parse ALLOWED_HOSTS from environment variable
+allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
+if allowed_hosts:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(",")]
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 # Add Render's hostname automatically
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Add production domain if in production
+if os.getenv("DJANGO_ENV") == "production" or not DEBUG:
+    ALLOWED_HOSTS.extend(
+        ["one01-analytics-api.onrender.com", "farm101-analytics-p.vercel.app"]
+    )
 
 # Application definition
 INSTALLED_APPS = [
@@ -249,14 +279,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "poultry.wsgi.application"
 
-# Database
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+# Database configuration
+if os.getenv("DATABASE_URL"):
+    # Use DATABASE_URL if available (for production)
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Use individual DB settings for development
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+            "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+            "USER": os.getenv("DB_USER", ""),
+            "PASSWORD": os.getenv("DB_PASS", ""),
+            "HOST": os.getenv("DB_HOST", ""),
+            "PORT": os.getenv("DB_PORT", ""),
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -295,7 +339,7 @@ AUTH_USER_MODEL = "core.User"
 # DRF settings
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_AUTHENTICATION_CLASSES": [
+    "DEFAULT_AUTHENTICATION_CLESSES": [
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -338,7 +382,16 @@ else:
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# Security settings (temporarily relaxed for debugging)
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+# Security settings - use environment variables or defaults
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", str(not DEBUG)).lower() == "true"
+SESSION_COOKIE_SECURE = (
+    os.getenv("SESSION_COOKIE_SECURE", str(not DEBUG)).lower() == "true"
+)
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", str(not DEBUG)).lower() == "true"
+
+# Production security settings
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 3600
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
