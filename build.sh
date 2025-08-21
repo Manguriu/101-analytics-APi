@@ -11,6 +11,8 @@ python manage.py collectstatic --noinput
 # Apply database migrations
 python manage.py migrate --noinput
 
+echo "Build completed successfully"
+
 # Create superuser using environment variables (if they exist)
 echo "Attempting to create superuser..."
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
