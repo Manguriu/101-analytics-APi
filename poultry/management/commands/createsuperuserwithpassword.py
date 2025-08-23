@@ -10,26 +10,23 @@ class Command(createsuperuser.Command):
     help = "Create a superuser with a password from environment variables"
 
     def handle(self, *args, **options):
-        username = os.getenv("DJANGO_SUPERUSER_USERNAME")
         email = os.getenv("DJANGO_SUPERUSER_EMAIL")
         password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
 
-        logger.info(
-            f"Username: {username}, Email: {email}, Password: {password}"
-        )  # Debug log
+        logger.info(f"Email: {email}, Password: {password}")  # Debug log
 
-        if not all([username, email, password]):
+        if not all([email, password]):
             raise CommandError(
-                "DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and DJANGO_SUPERUSER_PASSWORD must be set in environment variables."
+                "DJANGO_SUPERUSER_EMAIL and DJANGO_SUPERUSER_PASSWORD must be set in environment variables."
             )
 
-        if self.UserModel.objects.filter(username=username).exists():
+        # Check if a user with the email already exists
+        if self.UserModel.objects.filter(email=email).exists():
             self.stdout.write(
-                f"Superuser {username} already exists, skipping creation."
+                f"Superuser with email {email} already exists, skipping creation."
             )
             return
 
-        self.UserModel.objects.create_superuser(
-            username=username, email=email, password=password
-        )
-        self.stdout.write(f"Superuser {username} created successfully.")
+        # Create the superuser using email and password
+        self.UserModel.objects.create_superuser(email=email, password=password)
+        self.stdout.write(f"Superuser with email {email} created successfully.")
