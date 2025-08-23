@@ -243,6 +243,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "poultry.core",
+    "poultry",
     "poultry.user",
     "poultry.flock",
 ]

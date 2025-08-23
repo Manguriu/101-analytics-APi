@@ -1,6 +1,9 @@
 from django.contrib.auth.management.commands import createsuperuser
 from django.core.management import CommandError
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Command(createsuperuser.Command):
@@ -10,6 +13,10 @@ class Command(createsuperuser.Command):
         username = os.getenv("DJANGO_SUPERUSER_USERNAME")
         email = os.getenv("DJANGO_SUPERUSER_EMAIL")
         password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+
+        logger.info(
+            f"Username: {username}, Email: {email}, Password: {password}"
+        )  # Debug log
 
         if not all([username, email, password]):
             raise CommandError(
