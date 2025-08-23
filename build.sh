@@ -2,6 +2,12 @@
 # Exit on error
 set -o errexit
 
+# Debug: Print environment variables
+echo "DJANGO_SUPERUSER_USERNAME: $DJANGO_SUPERUSER_USERNAME"
+echo "DJANGO_SUPERUSER_EMAIL: $DJANGO_SUPERUSER_EMAIL"
+echo "DJANGO_SUPERUSER_PASSWORD: $DJANGO_SUPERUSER_PASSWORD"
+echo "DATABASE_URL: $DATABASE_URL"
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -24,11 +30,14 @@ username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
 email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
 password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
 
-if not User.objects.filter(username=username).exists():
-    User.objects.create_superuser(username=username, email=email, password=password)
-    print(f'Superuser {username} created successfully')
-else:
-    print(f'Superuser {username} already exists')
+try:
+    if not User.objects.filter(username=username).exists():
+        User.objects.create_superuser(username=username, email=email, password=password)
+        print(f'Superuser {username} created successfully')
+    else:
+        print(f'Superuser {username} already exists')
+except Exception as e:
+    print(f'Error creating superuser: {str(e)}')
 EOF
 else
     echo "Superuser environment variables not set, skipping superuser creation"
